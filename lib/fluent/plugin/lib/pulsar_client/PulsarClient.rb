@@ -13,7 +13,7 @@
 # limitations under the License.
 
 require 'socket'
-require 'fluent/plugin/lib/pulsar_client/PulsarApi.pb'
+require './PulsarApi.pb'
 require 'digest/crc32c'
 
 module Message
@@ -38,7 +38,6 @@ class PulsarClient
 		@client_created_id = 1
 		@request_id = 1
 		@producer_id = 1
-		@producer_name = "test"
 	end
 	
 	def connect_socket(host, port)
@@ -118,7 +117,7 @@ class PulsarClient
 		end
 	end
 
-	def command_send(message)
+	def command_send(producer_name, num_messages, message)
 		base_command = Pulsar::Proto::BaseCommand.new(
 				:type => Pulsar::Proto::BaseCommand::Type::SEND
 			)
@@ -126,14 +125,14 @@ class PulsarClient
 		base_command.send = Pulsar::Proto::CommandSend.new
 		base_command.send.producer_id = @producer_id
 		base_command.send.sequence_id = 0
-		base_command.send.num_messages = 1
+		base_command.send.num_messages = num_messages
 	
 		byte_cmd = base_command.serialize_to_string()
 
 
 		magic_number= [0x0e, 0x01].pack('C*')
 		metadata = Pulsar::Proto::MessageMetadata.new
-		metadata.producer_name = @producer_name
+		metadata.producer_name = producer_name
 		metadata.sequence_id = 0
 		metadata.publish_time = Time.now.to_i * 1000
 
@@ -163,7 +162,7 @@ class PulsarClient
 		if recv_cmd.type == Pulsar::Proto::BaseCommand::Type::PRODUCER_SUCCESS then
 			return true
 		else
-			return false	
+			return false
 		end
 	end
 
@@ -346,7 +345,7 @@ class PulsarClient
 		close_socket()
 	end
 
-	def send(topic, message)
+	def send(topic, producer_name, num_messages, message)
 		s = command_producer(topic)
 
 		# try again
@@ -354,7 +353,7 @@ class PulsarClient
 			command_lookup(topic)
 			command_producer(topic)
 		end
-		command_send(message)
+		command_send(producer_name, num_messages, message)
 	end
 
 	def subscribe(topic, subscription, sub_type)
