@@ -4,7 +4,7 @@ require './pulsar_client/PulsarClient'
 module Fluent
   module Plugin
     class PulsarOutput < Fluent::Plugin::Output
-      Fluent::Plugin.register_input('out_pulsar', self)
+      Fluent::Plugin.register_output('out_pulsar', self)
       # config Parameters
       desc 'The port of pulsar.'
       config_param :pulsar_port, :integer, default: nil
